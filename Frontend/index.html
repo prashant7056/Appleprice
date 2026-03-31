@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ApplePrice.in — Best Apple Prices in India</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+/* ── TOKENS ─────────────────────────────────────────────────────────────── */
+:root {
+  --bg:         #f5f3ef;
+  --surface:    #ffffff;
+  --surface2:   #f0ede8;
+  --border:     #e2ddd5;
+  --text:       #1a1814;
+  --sub:        #4a4540;
+  --muted:      #9a8f82;
+  --accent:     #e05c2a;
+  --accent-dim: rgba(224,92,42,.10);
+  --green:      #1a7a40;
+  --green-bg:   #edf7f2;
+  --red:        #c0392b;
+  --rank1:      #c07a10;
+  --rank2:      #6b7a86;
+  --rank3:      #9a5020;
+  --sh:         0 2px 8px rgba(60,40,20,.07),0 1px 2px rgba(60,40,20,.04);
+  --sh-md:      0 8px 32px rgba(60,40,20,.11),0 2px 8px rgba(60,40,20,.06);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Sora',sans-serif;min-height:100vh;overflow-x:hidden}
+
+/* ── HERO ──────────────────────────────────────────────────────────────── */
+.hero{background:radial-gradient(ellipse 80% 60% at 50% -10%,#fdeee5 0%,var(--bg) 70%);border-bottom:1px solid var(--border);padding:3rem 1.5rem 2rem;text-align:center}
+.hero-eyebrow{font-size:.72rem;letter-spacing:2px;color:var(--accent);text-transform:uppercase;margin-bottom:.6rem}
+.hero h1{font-family:'Lora',serif;font-size:clamp(1.8rem,5vw,3.2rem);font-weight:700;line-height:1.1;margin-bottom:.6rem}
+.hero h1 span{color:var(--accent)}
+.hero p{color:var(--muted);font-size:.95rem;max-width:460px;margin:0 auto 1.25rem}
+.hero-stats{display:flex;justify-content:center;gap:1.5rem;flex-wrap:wrap}
+.hero-stat{font-size:.75rem;color:var(--muted);text-align:center}
+.hero-stat strong{color:var(--accent);font-size:1.05rem;display:block}
+
+/* ── TOOLBAR ───────────────────────────────────────────────────────────── */
+.toolbar{background:var(--surface);border-bottom:1px solid var(--border);padding:.75rem 1.5rem;display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;position:sticky;top:0;z-index:90;box-shadow:var(--sh)}
+.search-wrap{position:relative;flex:1;min-width:140px;max-width:360px}
+.search-wrap input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:.5rem .9rem .5rem 2.2rem;font-family:'Sora',sans-serif;font-size:.88rem;outline:none;transition:border-color .2s}
+.search-wrap input:focus{border-color:var(--accent)}
+.search-wrap::before{content:'⌕';position:absolute;left:.7rem;top:50%;transform:translateY(-50%);color:var(--muted);font-size:1rem;pointer-events:none}
+.filter-pills{display:flex;gap:.35rem;flex-wrap:wrap}
+.pill{background:transparent;border:1px solid var(--border);border-radius:20px;color:var(--muted);padding:.25rem .8rem;font-family:'Sora',sans-serif;font-size:.72rem;cursor:pointer;transition:all .2s;white-space:nowrap}
+.pill:hover{border-color:var(--accent);color:var(--accent)}
+.pill.active{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.sort-select{background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:.45rem .8rem;font-family:'Sora',sans-serif;font-size:.75rem;outline:none;cursor:pointer;margin-left:auto}
+
+/* ── GRID ──────────────────────────────────────────────────────────────── */
+.main{max-width:1200px;margin:0 auto;padding:1.5rem}
+.product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1.1rem}
+
+/* ── CARD ──────────────────────────────────────────────────────────────── */
+.p-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;cursor:pointer;transition:border-color .25s,transform .2s,box-shadow .2s}
+.p-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:var(--sh-md)}
+.p-card-header{padding:1.1rem 1.1rem .7rem;display:flex;gap:.9rem;align-items:flex-start}
+.p-thumb{width:64px;height:64px;background:var(--bg);border-radius:10px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1.6rem;flex-shrink:0;overflow:hidden}
+.p-thumb img{width:100%;height:100%;object-fit:contain}
+.p-info{flex:1;min-width:0}
+.p-brand{font-size:.65rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:.15rem}
+.p-name{font-weight:600;font-size:.95rem;line-height:1.3;margin-bottom:.25rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.p-meta{font-size:.68rem;color:var(--muted)}
+.p-price-strip{background:var(--surface2);border-top:1px solid var(--border);padding:.7rem 1.1rem;display:flex;align-items:center;justify-content:space-between;gap:.75rem}
+.p-best-price{font-weight:700;font-size:1.15rem;color:var(--green)}
+.p-best-price span{font-size:.65rem;color:var(--muted);font-weight:400;display:block;margin-bottom:.05rem}
+.p-chips{display:flex;flex-direction:column;align-items:flex-end;gap:.25rem}
+.chip-models{font-size:.65rem;color:var(--muted)}
+
+/* ── MODAL ─────────────────────────────────────────────────────────────── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);z-index:200;display:flex;align-items:center;justify-content:center;padding:1rem;opacity:0;pointer-events:none;transition:opacity .25s}
+.overlay.open{opacity:1;pointer-events:all}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:820px;max-height:92vh;overflow-y:auto;transform:translateY(16px);transition:transform .25s;box-shadow:var(--sh-md)}
+.overlay.open .modal{transform:translateY(0)}
+
+.modal-hd{padding:1.25rem 1.25rem .9rem;display:flex;gap:1rem;align-items:flex-start;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);z-index:1}
+.modal-img-wrap{width:80px;height:80px;flex-shrink:0;border-radius:10px;border:1px solid var(--border);background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:2rem;overflow:hidden}
+.modal-img-wrap img{width:100%;height:100%;object-fit:contain}
+.modal-info{flex:1;min-width:0}
+.modal-family{font-family:'Lora',serif;font-size:1.3rem;font-weight:700;line-height:1.2;margin-bottom:.2rem}
+.modal-sub{font-size:.72rem;color:var(--muted);margin-bottom:.3rem}
+.modal-desc{font-size:.82rem;color:var(--muted);line-height:1.5}
+.modal-close{margin-left:auto;flex-shrink:0;background:none;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:.3rem .65rem;cursor:pointer;font-size:.95rem;transition:all .2s}
+.modal-close:hover{border-color:var(--red);color:var(--red)}
+.modal-body{padding:1.25rem}
+
+/* ── SELECTORS ─────────────────────────────────────────────────────────── */
+.sel-section{margin-bottom:1.1rem}
+.sel-label{font-size:.65rem;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);margin-bottom:.5rem}
+.sel-chips{display:flex;gap:.4rem;flex-wrap:wrap}
+.sel-chip{background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:.3rem .7rem;font-size:.78rem;cursor:pointer;transition:all .2s;user-select:none}
+.sel-chip:hover{border-color:var(--accent);color:var(--accent)}
+.sel-chip.chosen{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.color-chip{display:flex;align-items:center;gap:.45rem}
+.color-dot{width:14px;height:14px;border-radius:50%;border:1.5px solid rgba(0,0,0,.15);flex-shrink:0}
+.sel-hint{font-size:.75rem;color:var(--muted);text-align:center;padding:.6rem 0;border-top:1px solid var(--border);margin-top:.25rem}
+
+/* ── SECTION LABEL ─────────────────────────────────────────────────────── */
+.section-label{font-size:.65rem;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);margin-bottom:.65rem;display:flex;align-items:center;gap:.4rem}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* ── PRICES GATE ───────────────────────────────────────────────────────── */
+.prices-gate{text-align:center;padding:1.5rem 1rem;background:var(--surface2);border-radius:12px;color:var(--muted);font-size:.83rem;margin-top:.5rem}
+.prices-gate .gate-icon{font-size:1.6rem;margin-bottom:.4rem}
+
+/* ── SAVINGS ALERT ─────────────────────────────────────────────────────── */
+.savings-alert{background:var(--green-bg);border:1px solid rgba(26,122,64,.2);border-radius:8px;padding:.65rem .9rem;margin-bottom:1rem;font-size:.81rem;color:var(--green)}
+
+/* ── UNAVAILABLE ALL ALERT ─────────────────────────────────────────────── */
+.unavail-alert{background:#fdf3ef;border:1px solid rgba(192,57,43,.2);border-radius:8px;padding:.65rem .9rem;margin-bottom:1rem;font-size:.81rem;color:var(--red)}
+
+/* ── RANK TABLE (desktop) ──────────────────────────────────────────────── */
+.rank-table{width:100%;border-collapse:collapse}
+.rank-table th{text-align:left;padding:.45rem .75rem;font-size:.62rem;letter-spacing:1px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)}
+.rank-table td{padding:.75rem;font-size:.85rem;border-bottom:1px solid var(--border);vertical-align:middle}
+.rank-table tr:last-child td{border-bottom:none}
+.rank-table tr:hover td{background:var(--surface2)}
+.rank-num{font-weight:700;font-size:1rem}
+.rank-1 .rank-num{color:var(--rank1)}
+.rank-2 .rank-num{color:var(--rank2)}
+.rank-3 .rank-num{color:var(--rank3)}
+.price-big{font-size:1rem;font-weight:700;color:var(--green)}
+.best-badge{background:var(--accent);color:#fff;font-size:.58rem;font-weight:700;padding:.08rem .38rem;border-radius:3px;margin-left:.35rem;letter-spacing:.4px;vertical-align:middle}
+.bank-offer{font-size:.68rem;color:var(--rank1);margin-top:.25rem;display:flex;align-items:flex-start;gap:.3rem;line-height:1.4}
+.bank-offer::before{content:'🏦';font-size:.7rem;flex-shrink:0;margin-top:.05rem}
+.visit-btn{display:inline-block;background:var(--accent);color:#fff;font-size:.7rem;font-weight:700;padding:.3rem .8rem;border-radius:6px;text-decoration:none;white-space:nowrap;transition:filter .15s}
+.visit-btn:hover{filter:brightness(1.08)}
+.score-wrap{display:flex;align-items:center;gap:.4rem}
+.score-bar{height:4px;background:var(--border);border-radius:2px;width:52px}
+.score-fill{height:100%;background:var(--accent);border-radius:2px}
+
+/* ── AVAILABILITY BADGE ────────────────────────────────────────────────── */
+.avail-badge{display:inline-block;font-size:.6rem;font-weight:600;padding:.1rem .45rem;border-radius:4px;letter-spacing:.3px;vertical-align:middle;margin-left:.3rem;white-space:nowrap}
+.avail-available{background:var(--green-bg);color:var(--green);border:1px solid rgba(26,122,64,.2)}
+.avail-unavailable{background:#fdf0ef;color:var(--red);border:1px solid rgba(192,57,43,.2)}
+.avail-out_of_stock{background:#fdf5ec;color:var(--rank1);border:1px solid rgba(192,122,16,.2)}
+.avail-coming_soon{background:#f0f4ff;color:#4060b0;border:1px solid rgba(64,96,176,.2)}
+
+/* ── UNAVAILABLE ROW ───────────────────────────────────────────────────── */
+.row-unavailable td{opacity:.55}
+.row-unavailable .price-big{color:var(--muted)}
+
+/* ── MOBILE SELLER CARDS (replaces table on small screens) ────────────── */
+.seller-cards{display:none}
+.seller-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:.9rem;margin-bottom:.65rem}
+.seller-card.card-unavail{opacity:.6}
+.sc-head{display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin-bottom:.5rem}
+.sc-name{font-weight:600;font-size:.9rem}
+.sc-price{font-size:1.1rem;font-weight:700;color:var(--green)}
+.sc-price.muted{color:var(--muted)}
+.sc-row{display:flex;align-items:center;gap:.6rem;font-size:.78rem;color:var(--muted);margin-bottom:.25rem;flex-wrap:wrap}
+.sc-vs{font-size:.75rem;font-weight:600}
+.sc-vs.cheap{color:var(--green)}
+.sc-vs.pricey{color:var(--red)}
+.sc-bank{font-size:.7rem;color:var(--rank1);display:flex;align-items:flex-start;gap:.25rem;margin-top:.25rem;line-height:1.4}
+.sc-bank::before{content:'🏦';flex-shrink:0;margin-top:.05rem}
+.sc-buy{display:inline-block;background:var(--accent);color:#fff;font-size:.72rem;font-weight:700;padding:.3rem .8rem;border-radius:6px;text-decoration:none;white-space:nowrap;transition:filter .15s;margin-top:.45rem}
+.sc-buy:hover{filter:brightness(1.08)}
+.sc-score-wrap{display:flex;align-items:center;gap:.35rem}
+.sc-score-bar{height:3px;background:var(--border);border-radius:2px;width:40px}
+.sc-score-fill{height:100%;background:var(--accent);border-radius:2px}
+
+/* ── COUPON ────────────────────────────────────────────────────────────── */
+.coupon-box{background:#fffaf5;border:1.5px dashed var(--accent);border-radius:10px;padding:.85rem 1rem;margin-top:1rem;display:flex;align-items:flex-start;gap:.75rem}
+.coupon-icon{font-size:1.3rem;flex-shrink:0}
+.coupon-code{font-family:monospace;font-size:.95rem;font-weight:700;color:var(--accent);letter-spacing:.5px}
+.coupon-text{font-size:.82rem;color:var(--sub);margin-top:.1rem}
+.coupon-meta{font-size:.7rem;color:var(--muted);margin-top:.2rem}
+
+/* ── REVIEWS ───────────────────────────────────────────────────────────── */
+.review-form{background:var(--surface2);border-radius:12px;padding:1rem;margin-bottom:1rem}
+.review-form h4{font-size:.8rem;font-weight:600;margin-bottom:.75rem;color:var(--sub)}
+.rf-row{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:.6rem}
+.rf-full{margin-bottom:.6rem}
+.rf-label{font-size:.68rem;color:var(--muted);margin-bottom:.25rem;display:block}
+.rf-input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:7px;color:var(--text);padding:.5rem .75rem;font-family:'Sora',sans-serif;font-size:.85rem;outline:none;transition:border-color .2s}
+.rf-input:focus{border-color:var(--accent)}
+.rf-textarea{resize:vertical;min-height:72px}
+.star-row{display:flex;gap:.2rem;margin-top:.25rem}
+.star-r{font-size:1.2rem;cursor:pointer;color:var(--border);transition:color .15s}
+.star-r.on{color:var(--accent)}
+.rf-submit{background:var(--accent);color:#fff;border:none;border-radius:7px;padding:.5rem 1.1rem;font-family:'Sora',sans-serif;font-size:.8rem;font-weight:600;cursor:pointer;transition:filter .2s}
+.rf-submit:hover{filter:brightness(1.08)}
+.rf-submit:disabled{opacity:.5;cursor:not-allowed}
+
+.review-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:.9rem;margin-bottom:.65rem}
+.rc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:.25rem;gap:.5rem;flex-wrap:wrap}
+.rc-author{font-weight:600;font-size:.88rem}
+.rc-id{font-size:.62rem;color:var(--muted);font-family:monospace}
+.rc-stars{color:var(--accent);font-size:.8rem}
+.rc-body{font-size:.82rem;color:var(--sub);line-height:1.55;margin-bottom:.3rem}
+.rc-date{font-size:.65rem;color:var(--border)}
+/* Review image: preserve full aspect ratio, no cropping */
+.rc-img{width:100%;height:auto;max-width:100%;object-fit:contain;border-radius:8px;margin-top:.5rem;display:block;cursor:pointer}
+.rc-img:hover{opacity:.9}
+
+/* ── LIGHTBOX ────────────────────────────────────────────────────────── */
+.lightbox{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:9000;display:flex;align-items:center;justify-content:center;padding:1.5rem;opacity:0;pointer-events:none;transition:opacity .22s}
+.lightbox.open{opacity:1;pointer-events:all}
+.lightbox img{max-width:100%;max-height:90vh;width:auto;height:auto;object-fit:contain;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,.6)}
+.lightbox-close{position:fixed;top:1rem;right:1.25rem;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:8px;padding:.35rem .75rem;font-size:1.1rem;cursor:pointer;line-height:1;transition:background .2s;z-index:9001}
+.lightbox-close:hover{background:rgba(255,255,255,.28)}
+
+/* ── STATE BOXES ───────────────────────────────────────────────────────── */
+.state-box{grid-column:1/-1;text-align:center;padding:4rem 2rem;color:var(--muted)}
+.state-box .icon{font-size:2.8rem;margin-bottom:.85rem;opacity:.4}
+.state-box h3{font-family:'Lora',serif;font-size:1.4rem;color:var(--text);margin-bottom:.4rem}
+.state-box p{font-size:.85rem;max-width:320px;margin:0 auto}
+.retry-btn{margin-top:1rem;display:inline-block;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:.55rem 1.2rem;font-family:'Sora',sans-serif;font-size:.8rem;font-weight:600;cursor:pointer}
+.spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto .85rem}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+footer{border-top:1px solid var(--border);padding:1.25rem 1.5rem;text-align:center;font-size:.75rem;color:var(--muted)}
+
+/* ── RESPONSIVE ────────────────────────────────────────────────────────── */
+@media(max-width:600px){
+  .modal-hd{flex-wrap:wrap}
+  .modal-img-wrap{width:60px;height:60px}
+  .modal-family{font-size:1.1rem}
+  /* Switch from table to cards on mobile */
+  .rank-table-wrap{display:none}
+  .seller-cards{display:block}
+  .rf-row{grid-template-columns:1fr}
+  .hero-stats{gap:1rem}
+}
+@media(min-width:601px){
+  .rank-table-wrap{display:block}
+  .seller-cards{display:none}
+}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-eyebrow">Live Price Comparison · India</div>
+  <h1>Best Price on Every<br><span>Apple Product</span></h1>
+  <p>Compare prices across 6 top Indian retailers. Pick your exact config and see real prices.</p>
+  <div class="hero-stats" id="hero-stats">
+    <div class="hero-stat"><strong>—</strong>Products</div>
+    <div class="hero-stat"><strong>—</strong>Retailers</div>
+    <div class="hero-stat"><strong>—</strong>Listings</div>
+  </div>
+</div>
+
+<div class="toolbar">
+  <div class="search-wrap">
+    <input type="text" id="search-input" placeholder="Search products…" oninput="applyFilters()">
+  </div>
+  <div class="filter-pills" id="filter-pills">
+    <button class="pill active" data-cat="All" onclick="setCategory('All',this)">All</button>
+  </div>
+  <select class="sort-select" id="sort-select" onchange="applyFilters()">
+    <option value="name">Sort: Name</option>
+    <option value="price-asc">Price: Low → High</option>
+    <option value="price-desc">Price: High → Low</option>
+  </select>
+</div>
+
+<div class="main">
+  <div class="product-grid" id="product-grid">
+    <div class="state-box"><div class="spinner"></div><p>Loading products…</p></div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="overlay" id="overlay" onclick="closeOverlay(event)">
+  <div class="modal" id="modal">
+    <div class="modal-hd" id="modal-hd"></div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<footer>
+  <p>ApplePrice.in — Amazon.in · Flipkart · Apple Store India · Croma · Reliance Digital · Vijay Sales</p>
+  <p style="margin-top:.3rem" id="footer-count"></p>
+</footer>
+
+<script>
+// ── CONFIG ────────────────────────────────────────────────────────────────
+const API      = 'http://localhost:3001/api';
+const API_BASE = 'http://localhost:3001'; // for resolving /uploads/ image paths
+
+// FIX: All image paths from the backend are relative (e.g. /uploads/foo.jpg).
+// When the HTML is opened as file:// those paths break because the browser
+// resolves them against the filesystem root, not the backend.
+// imgUrl() converts them to absolute backend URLs.
+function imgUrl(path) {
+  if (!path) return '';
+  if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('//')) return path;
+  return API_BASE + path;
+}
+
+let allProducts = [];
+let activeCat   = 'All';
+
+// ── BOOT ─────────────────────────────────────────────────────────────────
+async function init() {
+  await Promise.all([loadStats(), loadCategories(), loadProducts()]);
+}
+
+async function loadStats() {
+  try {
+    const d = await safeGet('/stats');
+    if (!d.success) return;
+    const s = d.stats;
+    document.getElementById('hero-stats').innerHTML =
+      `<div class="hero-stat"><strong>${s.totalProducts}</strong>Products</div>
+       <div class="hero-stat"><strong>6</strong>Retailers</div>
+       <div class="hero-stat"><strong>${s.totalListings}</strong>Listings</div>
+       <div class="hero-stat"><strong>₹${s.totalSavings.toLocaleString('en-IN')}</strong>Total Savings</div>`;
+    document.getElementById('footer-count').textContent =
+      `${s.totalProducts} products · ${s.totalListings} listings tracked`;
+  } catch(_) {}
+}
+
+async function loadCategories() {
+  try {
+    const d = await safeGet('/categories');
+    if (!d.success) return;
+    document.getElementById('filter-pills').innerHTML = d.categories.map(c =>
+      `<button class="pill${c==='All'?' active':''}" data-cat="${c}"
+        onclick="setCategory('${c}',this)">${c}</button>`
+    ).join('');
+  } catch(_) {}
+}
+
+async function loadProducts() {
+  showLoading();
+  try {
+    const d = await safeGet('/products');
+    allProducts = d.products || [];
+    renderGrid(allProducts);
+  } catch(e) { showError(e.message); }
+}
+
+// ── FILTER ────────────────────────────────────────────────────────────────
+function setCategory(cat, el) {
+  activeCat = cat;
+  document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  applyFilters();
+}
+function applyFilters() {
+  const q    = document.getElementById('search-input').value.toLowerCase().trim();
+  const sort = document.getElementById('sort-select').value;
+  let list   = [...allProducts];
+  if (activeCat !== 'All') list = list.filter(p => p.category === activeCat);
+  if (q) list = list.filter(p => (p.family+p.brand+p.category+(p.desc||'')).toLowerCase().includes(q));
+  if (sort==='price-asc')  list.sort((a,b)=>(a.lowestPrice||Infinity)-(b.lowestPrice||Infinity));
+  if (sort==='price-desc') list.sort((a,b)=>(b.lowestPrice||0)-(a.lowestPrice||0));
+  if (sort==='name')       list.sort((a,b)=>a.family.localeCompare(b.family));
+  renderGrid(list);
+}
+
+// ── GRID ──────────────────────────────────────────────────────────────────
+function showLoading() {
+  document.getElementById('product-grid').innerHTML =
+    `<div class="state-box"><div class="spinner"></div><p>Loading products…</p></div>`;
+}
+function showError(msg) {
+  document.getElementById('product-grid').innerHTML =
+    `<div class="state-box"><div class="icon">⚠️</div><h3>Could not load products</h3>
+     <p>${msg||'Make sure the backend is running at '+API}</p>
+     <button class="retry-btn" onclick="loadProducts()">Retry</button></div>`;
+}
+function renderGrid(list) {
+  const grid = document.getElementById('product-grid');
+  if (!list.length) {
+    grid.innerHTML = allProducts.length===0
+      ? `<div class="state-box"><div class="icon">📦</div><h3>No Products Yet</h3><p>Check back soon!</p></div>`
+      : `<div class="state-box"><div class="icon">🔍</div><h3>No Results</h3><p>Try a different search or category.</p></div>`;
+    return;
+  }
+  grid.innerHTML = list.map(p => {
+    // FIX: use imgUrl() so /uploads/ paths resolve correctly from file://
+    const thumb = (p.thumbImage || p.defaultImage)
+      ? `<div class="p-thumb"><img src="${imgUrl(p.thumbImage||p.defaultImage)}" onerror="this.parentElement.innerHTML='📱'"></div>`
+      : `<div class="p-thumb">📱</div>`;
+    return `<div class="p-card" onclick="openModal(${p.id})">
+      <div class="p-card-header">
+        ${thumb}
+        <div class="p-info">
+          <div class="p-brand">${p.brand} · ${p.category}</div>
+          <div class="p-name">${p.family}</div>
+          <div class="p-meta">${p.modelCount} model${p.modelCount!==1?'s':''} · ${p.reviewCount} review${p.reviewCount!==1?'s':''}</div>
+        </div>
+      </div>
+      <div class="p-price-strip">
+        <div class="p-best-price">
+          <span>From</span>
+          ${p.lowestPrice ? '₹'+p.lowestPrice.toLocaleString('en-IN') : 'Select options'}
+        </div>
+        <div class="p-chips">
+          <span class="chip-models">${p.totalListings} listing${p.totalListings!==1?'s':''}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── MODAL STATE ───────────────────────────────────────────────────────────
+let modalProduct = null;
+let selModel     = null;
+let selStorage   = null;
+let selColor     = null;
+let reviewRating = 5;
+
+async function openModal(id) {
+  selModel = selStorage = selColor = null;
+  reviewRating = 5;
+  try {
+    const d = await safeGet(`/products/${id}`);
+    if (!d.success) return;
+    modalProduct = d.product;
+    renderModalHeader();
+    renderModalBody();
+    document.getElementById('overlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  } catch(e) {
+    alert('Could not load product. Is the backend running at ' + API + '?');
+  }
+}
+
+// ── MODAL HEADER ──────────────────────────────────────────────────────────
+function renderModalHeader() {
+  const p     = modalProduct;
+  const image = getDisplayImage();
+  const imgHtml = image
+    ? `<div class="modal-img-wrap"><img src="${image}" alt="${p.family}" onerror="this.parentElement.innerHTML='📱'"></div>`
+    : `<div class="modal-img-wrap">📱</div>`;
+  document.getElementById('modal-hd').innerHTML =
+    `${imgHtml}
+     <div class="modal-info">
+       <div class="modal-sub">${p.brand} · ${p.category}</div>
+       <div class="modal-family">${p.family}</div>
+       ${p.desc ? `<div class="modal-desc">${p.desc}</div>` : ''}
+     </div>
+     <button class="modal-close" onclick="closeModalDirect()">✕</button>`;
+}
+
+// FIX: Fallback chain:
+// 1. selected model + selected color image
+// 2. product defaultImage
+// 3. first model + first color image
+// All paths go through imgUrl() to resolve /uploads/ correctly.
+function getDisplayImage() {
+  if (!modalProduct) return '';
+  const p      = modalProduct;
+  const models = p.models || [];
+
+  // Try exact selection
+  if (selModel && selColor) {
+    const model = models.find(m => m.modelId === selModel);
+    const color = model?.colors?.find(c => c.name === selColor);
+    if (color?.image) return imgUrl(color.image);
+  }
+
+  // Fallback 1: selected model's first color
+  if (selModel) {
+    const model = models.find(m => m.modelId === selModel);
+    const firstColorImg = model?.colors?.[0]?.image;
+    if (firstColorImg) return imgUrl(firstColorImg);
+  }
+
+  // Fallback 2: product defaultImage
+  if (p.defaultImage) return imgUrl(p.defaultImage);
+
+  // Fallback 3: first model, first color
+  const firstImg = models[0]?.colors?.[0]?.image;
+  return firstImg ? imgUrl(firstImg) : '';
+}
+
+// ── MODAL BODY ────────────────────────────────────────────────────────────
+function renderModalBody() {
+  const p         = modalProduct;
+  const allChosen = !!(selModel && selStorage && selColor);
+  let html        = '';
+
+  // Step 1: Model
+  html += `<div class="sel-section">
+    <div class="sel-label">Model</div>
+    <div class="sel-chips">
+      ${p.models.map(m =>
+        `<div class="sel-chip${selModel===m.modelId?' chosen':''}"
+              onclick="pickModel('${m.modelId}')">${m.name}</div>`
+      ).join('')}
+    </div>
+  </div>`;
+
+  // Step 2: Storage — after model
+  if (selModel) {
+    const model = p.models.find(m => m.modelId === selModel);
+    html += `<div class="sel-section">
+      <div class="sel-label">Storage</div>
+      <div class="sel-chips">
+        ${(model.storages || []).map(s =>
+          `<div class="sel-chip${selStorage===s?' chosen':''}"
+                onclick="pickStorage('${escQ(s)}')">${s}</div>`
+        ).join('')}
+      </div>
+    </div>`;
+  }
+
+  // Step 3: Color — after storage
+  if (selModel && selStorage) {
+    const model = p.models.find(m => m.modelId === selModel);
+    html += `<div class="sel-section">
+      <div class="sel-label">Color</div>
+      <div class="sel-chips">
+        ${(model.colors || []).map(c =>
+          `<div class="sel-chip color-chip${selColor===c.name?' chosen':''}"
+                onclick="pickColor('${escQ(c.name)}')">
+            <span class="color-dot" style="background:${c.hex}"></span>${c.name}
+          </div>`
+        ).join('')}
+      </div>
+    </div>`;
+  }
+
+  // Prices
+  if (!allChosen) {
+    const next = !selModel ? 'a model' : (!selStorage ? 'a storage size' : 'a color');
+    html += `<div class="prices-gate">
+      <div class="gate-icon">👆</div>
+      <div>Choose ${next} to see prices &amp; availability</div>
+    </div>`;
+  } else {
+    html += `<div id="prices-area"><div class="spinner" style="margin:1.5rem auto"></div></div>`;
+  }
+
+  // Reviews — only after full selection
+  if (allChosen) {
+    html += renderReviewsSection(p.reviews || [], p.id);
+  } else {
+    html += `<p class="sel-hint">Select model, storage &amp; color to see reviews</p>`;
+  }
+
+  document.getElementById('modal-body').innerHTML = html;
+  if (allChosen) loadPrices();
+}
+
+// ── SELECTION ─────────────────────────────────────────────────────────────
+function pickModel(modelId) {
+  selModel   = modelId;
+  selStorage = null;
+  selColor   = null;
+  renderModalHeader();
+  renderModalBody();
+}
+function pickStorage(s) {
+  selStorage = s;
+  selColor   = null;
+  renderModalHeader();
+  renderModalBody();
+}
+function pickColor(c) {
+  selColor = c;
+  renderModalHeader();
+  renderModalBody();
+}
+
+// ── PRICES ────────────────────────────────────────────────────────────────
+async function loadPrices() {
+  const p  = modalProduct;
+  const qs = `?model=${encodeURIComponent(selModel)}&storage=${encodeURIComponent(selStorage)}&color=${encodeURIComponent(selColor)}`;
+  try {
+    const d = await safeGet(`/products/${p.id}/prices${qs}`);
+    renderPricesArea(d);
+  } catch(e) {
+    const area = document.getElementById('prices-area');
+    if (area) area.innerHTML =
+      `<div class="prices-gate"><div class="gate-icon">⚠️</div><div>Could not load prices. Is the backend running?</div></div>`;
+  }
+}
+
+const AVAIL_LABEL = {
+  available:   { text: 'Available',          cls: 'avail-available' },
+  unavailable: { text: 'Currently Unavailable', cls: 'avail-unavailable' },
+  out_of_stock:{ text: 'Out of Stock',        cls: 'avail-out_of_stock' },
+  coming_soon: { text: 'Coming Soon',         cls: 'avail-coming_soon' },
+};
+
+function renderPricesArea(d) {
+  const area = document.getElementById('prices-area');
+  if (!area) return;
+
+  if (!d.success || !d.sellers || !d.sellers.length) {
+    area.innerHTML = `<div class="prices-gate"><div class="gate-icon">🤷</div>No prices entered for this combination yet.</div>`;
+    return;
+  }
+
+  const sellers        = d.sellers;
+  const savings        = d.savings || 0;
+  const allUnavailable = d.allUnavailable;
+
+  let html = '';
+
+  if (allUnavailable) {
+    html += `<div class="unavail-alert">⚠️ This variant is currently unavailable across all tracked retailers.</div>`;
+  } else if (savings > 0) {
+    html += `<div class="savings-alert">💡 Buy from <strong>${sellers[0].site}</strong> and save <strong>₹${savings.toLocaleString('en-IN')}</strong> vs the highest available listing.</div>`;
+  }
+
+  html += `<div class="section-label">Price Rankings</div>`;
+
+  // ── DESKTOP TABLE ──────────────────────────────────────────────────────
+  html += `<div class="rank-table-wrap"><div style="overflow-x:auto">
+  <table class="rank-table">
+    <thead><tr><th>#</th><th>Retailer</th><th>Price</th><th>vs Best</th><th>Score</th><th></th></tr></thead>
+    <tbody>`;
+
+  const availSellers = sellers.filter(s => (s.availability ?? 'available') === 'available');
+
+  sellers.forEach((s, i) => {
+    const isUnavail  = (s.availability ?? 'available') !== 'available';
+    const medal      = ['🥇','🥈','🥉'][i] || `#${i+1}`;
+    const availLabel = AVAIL_LABEL[s.availability ?? 'available'] || AVAIL_LABEL.available;
+    const availBadge = `<span class="avail-badge ${availLabel.cls}">${availLabel.text}</span>`;
+
+    let vsBest;
+    if (isUnavail) {
+      vsBest = availBadge;
+    } else if (i === 0 || availSellers[0] === s) {
+      vsBest = `<span style="color:var(--green);font-size:.78rem">Cheapest</span>`;
+    } else {
+      const cheapest = availSellers[0]?.price || s.price;
+      vsBest = `<span style="color:var(--red);font-size:.78rem">+${(((s.price-cheapest)/cheapest)*100).toFixed(1)}%</span>`;
+    }
+
+    const scoreW  = ((s.score||0)/10)*100;
+    const buyBtn  = (!isUnavail && s.link)
+      ? `<a href="${s.link}" target="_blank" rel="noopener" class="visit-btn">Buy</a>`
+      : `<span style="color:var(--muted);font-size:.72rem">—</span>`;
+    const bankHtml = s.bankOffer && !isUnavail
+      ? `<div class="bank-offer">${s.bankOffer}</div>` : '';
+
+    html += `<tr class="rank-${i+1}${isUnavail?' row-unavailable':''}">
+      <td><span class="rank-num">${medal}</span></td>
+      <td><strong>${s.site}</strong>${i===0&&!isUnavail?'<span class="best-badge">BEST</span>':''}
+          ${isUnavail ? availBadge : ''}${bankHtml}</td>
+      <td class="price-big${isUnavail?' muted':''}">₹${Number(s.price).toLocaleString('en-IN')}</td>
+      <td>${vsBest}</td>
+      <td><div class="score-wrap">
+        <span style="font-size:.72rem">${s.score}/10</span>
+        <div class="score-bar"><div class="score-fill" style="width:${scoreW}%"></div></div>
+      </div></td>
+      <td>${buyBtn}</td>
+    </tr>`;
+  });
+  html += `</tbody></table></div></div>`;
+
+  // ── MOBILE CARDS ───────────────────────────────────────────────────────
+  html += `<div class="seller-cards">`;
+  sellers.forEach((s, i) => {
+    const isUnavail  = (s.availability ?? 'available') !== 'available';
+    const medal      = ['🥇','🥈','🥉'][i] || `#${i+1}`;
+    const availLabel = AVAIL_LABEL[s.availability ?? 'available'] || AVAIL_LABEL.available;
+    const cheapest   = availSellers[0]?.price;
+    const vsHtml     = isUnavail
+      ? `<span class="avail-badge ${availLabel.cls}">${availLabel.text}</span>`
+      : (i===0 ? `<span class="sc-vs cheap">Cheapest</span>`
+               : `<span class="sc-vs pricey">+${(((s.price-cheapest)/cheapest)*100).toFixed(1)}%</span>`);
+    const scoreW = ((s.score||0)/10)*100;
+    const buyBtn = (!isUnavail && s.link)
+      ? `<a href="${s.link}" target="_blank" rel="noopener" class="sc-buy">Buy Now →</a>` : '';
+    const bankHtml = (s.bankOffer && !isUnavail)
+      ? `<div class="sc-bank">${s.bankOffer}</div>` : '';
+
+    html += `<div class="seller-card${isUnavail?' card-unavail':''}">
+      <div class="sc-head">
+        <span class="sc-name">${medal} ${s.site}${i===0&&!isUnavail?'<span class="best-badge" style="margin-left:.4rem">BEST</span>':''}</span>
+        <span class="sc-price${isUnavail?' muted':''}">₹${Number(s.price).toLocaleString('en-IN')}</span>
+      </div>
+      <div class="sc-row">
+        ${vsHtml}
+        <div class="sc-score-wrap">
+          <span style="font-size:.72rem;color:var(--muted)">${s.score}/10</span>
+          <div class="sc-score-bar"><div class="sc-score-fill" style="width:${scoreW}%"></div></div>
+        </div>
+      </div>
+      ${bankHtml}
+      ${buyBtn}
+    </div>`;
+  });
+  html += `</div>`; // end seller-cards
+
+  // Coupon
+  if (d.coupon) {
+    const c = d.coupon;
+    html += `<div class="coupon-box">
+      <div class="coupon-icon">🏷️</div>
+      <div>
+        <div class="coupon-code">${c.code}</div>
+        <div class="coupon-text">${c.text}</div>
+        <div class="coupon-meta">${[c.expiry?'Expires '+c.expiry:'',c.terms].filter(Boolean).join(' · ')}</div>
+      </div>
+    </div>`;
+  }
+
+  area.innerHTML = html;
+}
+
+// ── REVIEWS ───────────────────────────────────────────────────────────────
+function renderReviewsSection(reviews, productId) {
+  const stars = n => '★'.repeat(n) + '☆'.repeat(5-n);
+  // FIX: use imgUrl() so review images resolve correctly from file://
+  const cards = reviews.map(r => `
+    <div class="review-card">
+      <div class="rc-top">
+        <span class="rc-author">${r.author}</span>
+        <span class="rc-id">${r.reviewId}</span>
+        <span class="rc-stars">${stars(r.rating)}</span>
+      </div>
+      <div class="rc-body">${r.body}</div>
+      ${r.image ? `<img class="rc-img" src="${imgUrl(r.image)}" alt="Review photo" title="Click to view full size" onclick="openLightbox('${imgUrl(r.image)}')" onerror="this.style.display='none'">` : ''}
+      <div class="rc-date">${r.date}</div>
+    </div>`).join('');
+
+  return `<div style="margin-top:1.75rem">
+    <div class="section-label">Customer Reviews (${reviews.length})</div>
+    <div class="review-form">
+      <h4>Write a Review</h4>
+      <div class="rf-row">
+        <div>
+          <label class="rf-label">Your Name</label>
+          <input class="rf-input" id="rv-name" placeholder="e.g. Rahul S.">
+        </div>
+        <div>
+          <label class="rf-label">Rating</label>
+          <div class="star-row" id="rv-stars">
+            ${[1,2,3,4,5].map(n=>`<span class="star-r on" onclick="setRvStar(${n})">★</span>`).join('')}
+          </div>
+        </div>
+      </div>
+      <div class="rf-full">
+        <label class="rf-label">Review</label>
+        <textarea class="rf-input rf-textarea" id="rv-body" placeholder="Share your experience…"></textarea>
+      </div>
+      <div class="rf-full">
+        <label class="rf-label">Photo (optional)</label>
+        <input class="rf-input" type="file" id="rv-img" accept="image/*" style="padding:.35rem">
+      </div>
+      <button class="rf-submit" onclick="submitReview(${productId})">Submit Review</button>
+    </div>
+    ${cards || `<p style="font-size:.82rem;color:var(--muted);padding:.5rem 0">No reviews yet. Be the first!</p>`}
+  </div>`;
+}
+
+function setRvStar(n) {
+  reviewRating = n;
+  document.querySelectorAll('.star-r').forEach((s,i) => s.classList.toggle('on', i < n));
+}
+
+async function submitReview(productId) {
+  const author = document.getElementById('rv-name')?.value.trim();
+  const body   = document.getElementById('rv-body')?.value.trim();
+  const imgEl  = document.getElementById('rv-img');
+  if (!author || !body) { alert('Please enter your name and review text.'); return; }
+
+  const btn = document.querySelector('.rf-submit');
+  btn.disabled = true; btn.textContent = 'Submitting…';
+
+  try {
+    const fd = new FormData();
+    fd.append('author', author);
+    fd.append('rating', reviewRating);
+    fd.append('body',   body);
+    if (imgEl?.files[0]) fd.append('image', imgEl.files[0]);
+
+    const data = await safePost(`/products/${productId}/reviews`, fd);
+    if (!data.success) throw new Error(data.message || 'Submit failed');
+
+    const pd = await safeGet(`/products/${productId}`);
+    modalProduct = pd.product;
+    renderModalBody();
+  } catch(e) {
+    alert('Error submitting review: ' + e.message);
+    btn.disabled = false; btn.textContent = 'Submit Review';
+  }
+}
+
+// ── CLOSE MODAL ───────────────────────────────────────────────────────────
+function closeOverlay(e) { if (e.target===document.getElementById('overlay')) closeModalDirect(); }
+function closeModalDirect() {
+  document.getElementById('overlay').classList.remove('open');
+  document.body.style.overflow = '';
+  modalProduct = null;
+}
+// (Escape is handled by the combined listener below that closes both modal and lightbox)
+
+// ── SAFE FETCH ────────────────────────────────────────────────────────────
+async function safeGet(path) {
+  const r    = await fetch(API + path);
+  const text = await r.text();
+  let data;
+  try { data = JSON.parse(text); }
+  catch(e) { throw new Error(`Server returned non-JSON for GET ${path}. Is the backend running at ${API}?`); }
+  if (!r.ok) throw new Error(data.message || `HTTP ${r.status}`);
+  return data;
+}
+async function safePost(path, body) {
+  const opts = { method: 'POST' };
+  if (body instanceof FormData) {
+    opts.body = body;
+  } else {
+    opts.headers = { 'Content-Type': 'application/json' };
+    opts.body    = JSON.stringify(body);
+  }
+  const r    = await fetch(API + path, opts);
+  const text = await r.text();
+  let data;
+  try { data = JSON.parse(text); }
+  catch(e) { throw new Error(`Server returned non-JSON for POST ${path}. Is the backend running at ${API}?`); }
+  return data;
+}
+
+function escQ(s) { return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+
+// ── LIGHTBOX ──────────────────────────────────────────────────────────────
+function openLightbox(src) {
+  const lb  = document.getElementById('lightbox');
+  const img = document.getElementById('lightbox-img');
+  img.src = src;
+  lb.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+  // Only restore scroll if modal is not also open
+  if (!document.getElementById('overlay').classList.contains('open')) {
+    document.body.style.overflow = '';
+  }
+}
+// Escape key closes lightbox
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    closeLightbox();
+    closeModalDirect();
+  }
+});
+
+init();
+</script>
+<!-- LIGHTBOX — for full-size review image view -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+  <img id="lightbox-img" src="" alt="Full size image">
+</div>
+
+</body>
+</html>
