@@ -587,8 +587,8 @@ app.use((err, req, res, next) => {
 
 // ── START ─────────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-  console.log(`✅ ApplePrice.in API  →  http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`✅ ApplePrice.in API  →  http://0.0.0.0:${PORT}`);
   console.log(`   Database           →  ${DB_PATH}`);
   console.log(`   Product images     →  ${UPLOADS_PRODUCTS}`);
   console.log(`   Review images      →  ${UPLOADS_REVIEWS}`);
