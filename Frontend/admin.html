@@ -287,16 +287,55 @@ input[type="file"].fi{padding:.35rem .6rem;cursor:pointer}
 <div class="toast" id="toast"></div>
 
 <script>
-const API = 'https://appleprice-production.up.railway.app/api';
+const API      = 'https://appleprice-production.up.railway.app/api';
 const API_BASE = 'https://appleprice-production.up.railway.app';
 const CREDS    = { user: 'Prashant7056', pass: 'Rohit@#12345' };
 
-// FIX: Resolve /uploads/ paths to absolute backend URLs
-// so images display correctly whether opened via file:// or a web server.
+// Resolve /uploads/ paths to absolute backend URLs
 function imgUrl(path) {
   if (!path) return '';
   if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('//')) return path;
   return API_BASE + path;
+}
+
+// ── HARDENED FETCH WITH RETRY + TIMEOUT ──────────────────────────────────
+// Used by every API call in admin — retries 3× with backoff, 12 s timeout,
+// always parses text first so HTML error pages don't crash JSON.parse.
+const MAX_RETRIES   = 3;
+const BASE_DELAY_MS = 800;
+const TIMEOUT_MS    = 12000;
+
+async function fetchWithRetry(url, opts = {}) {
+  let lastErr;
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    if (attempt > 0) await new Promise(r => setTimeout(r, BASE_DELAY_MS * attempt));
+    const controller = new AbortController();
+    const timer      = setTimeout(() => controller.abort(), TIMEOUT_MS);
+    try {
+      const res = await fetch(url, {
+        ...opts,
+        signal:  controller.signal,
+        cache:   opts.method && opts.method !== 'GET' ? undefined : 'no-store',
+        headers: { 'Accept': 'application/json', ...(opts.headers || {}) },
+      });
+      clearTimeout(timer);
+      const text = await res.text();
+      let data;
+      try { data = JSON.parse(text); }
+      catch(e) { throw new Error('Server returned non-JSON. Backend may be starting up — please retry.'); }
+      if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
+      return data;
+    } catch(e) {
+      clearTimeout(timer);
+      lastErr = e.name === 'AbortError'
+        ? new Error(`Request timed out after ${TIMEOUT_MS / 1000}s`)
+        : e;
+      console.warn(`[Admin] Attempt ${attempt + 1}/${MAX_RETRIES}: ${lastErr.message}`);
+      // Don't retry on auth/validation errors (4xx)
+      if (lastErr.message.startsWith('HTTP 4')) break;
+    }
+  }
+  throw lastErr;
 }
 
 let loginAttempts = 0;
@@ -427,11 +466,8 @@ async function uploadDefaultImg(input){
   const fd=new FormData();
   fd.append('image',input.files[0]);
   try{
-    const res=await fetch(`${API}/upload`,{method:'POST',body:fd});
-    const text=await res.text();
-    let d;
-    try{d=JSON.parse(text);}catch(e){throw new Error('Server returned non-JSON. Is the backend running?');}
-    if(!res.ok||!d.success)throw new Error(d.message||'Upload failed');
+    const d=await fetchWithRetry(`${API}/upload`,{method:'POST',body:fd});
+    if(!d.success)throw new Error(d.message||'Upload failed');
     document.getElementById('f-default-img-url').value=d.url;
     const prev=document.getElementById('f-default-img-prev');
     prev.src=imgUrl(d.url);prev.classList.add('show');
@@ -587,11 +623,8 @@ async function uploadColorImg(mIdx,cIdx,input){
   const fd=new FormData();
   fd.append('image',input.files[0]);
   try{
-    const res=await fetch(`${API}/upload`,{method:'POST',body:fd});
-    const text=await res.text();
-    let d;
-    try{d=JSON.parse(text);}catch(e){throw new Error('Server returned non-JSON. Is the backend running?');}
-    if(!res.ok||!d.success)throw new Error(d.message||'Upload failed');
+    const d=await fetchWithRetry(`${API}/upload`,{method:'POST',body:fd});
+    if(!d.success)throw new Error(d.message||'Upload failed');
     // FIX: Store the raw /uploads/ path in the hidden field (relative URL saved to DB)
     document.getElementById(`cc-imgurl-${mIdx}-${cIdx}`).value=d.url;
     const prev=document.getElementById(`cc-imgprev-${mIdx}-${cIdx}`);
@@ -789,14 +822,11 @@ async function saveProduct(){
   try{
     const eid=document.getElementById('edit-id').value;
     const isEdit=!!eid;
-    const res=await fetch(`${API}/products${isEdit?'/'+eid:''}`,{
+    const d=await fetchWithRetry(`${API}/products${isEdit?'/'+eid:''}`,{
       method:isEdit?'PUT':'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify(payload),
     });
-    const text=await res.text();
-    let d;
-    try{d=JSON.parse(text);}catch(e){throw new Error('Server returned non-JSON. Is the backend running?');}
     if(!d.success)throw new Error(d.message||'Save failed');
     showToast(isEdit?'✅ Updated!':'✅ Product added!');
     await loadProductsPage();
@@ -977,9 +1007,7 @@ function renderReviewList(reviews){
 async function deleteReview(productId,reviewId){
   if(!confirm(`Delete review ${reviewId}?`))return;
   try{
-    const res=await fetch(`${API}/products/${productId}/reviews/${reviewId}`,{method:'DELETE'});
-    const text=await res.text();
-    let d;try{d=JSON.parse(text);}catch(e){throw new Error('Non-JSON response');}
+    const d=await fetchWithRetry(`${API}/products/${productId}/reviews/${reviewId}`,{method:'DELETE'});
     if(!d.success)throw new Error(d.message);
     showToast('Review deleted');
     loadAllReviews();
@@ -996,14 +1024,13 @@ function showToast(msg,err=false){
 }
 
 // ── UTILS ────────────────────────────────────────────────────────────────
-async function apiFetch(path,opts={}){
-  const r=await fetch(API+path,opts);
-  const text=await r.text();
-  let data;
-  try{data=JSON.parse(text);}
-  catch(e){throw new Error(`Server returned non-JSON for ${path}. Is the backend running at ${API}?`);}
-  if(!r.ok)throw new Error(data.message||`HTTP ${r.status}`);
-  return data;
+async function apiFetch(path, opts = {}) {
+  // Add timestamp cache-buster on GET requests to prevent Safari stale cache
+  let url = API + path;
+  if (!opts.method || opts.method === 'GET') {
+    url += (path.includes('?') ? '&' : '?') + '_=' + Date.now();
+  }
+  return fetchWithRetry(url, opts);
 }
 function escH(s){return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}
 function setVal(id,val){const el=document.getElementById(id);if(el)el.value=val;}
