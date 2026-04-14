@@ -44,39 +44,54 @@ const UPLOADS_REVIEWS    = path.join(UPLOADS_DIR, 'reviews');
 });
 
 // ── CORS ─────────────────────────────────────────────────────────────────────
-// Explicit allowed origins so mobile Safari, Chrome, and Samsung Browser
-// don't get blocked by missing/wrong CORS headers.
-const ALLOWED_ORIGINS = [
+// Allows requests from:
+//   • Vercel production + preview deployments (*.vercel.app)
+//   • Custom domain (appleprice.in)
+//   • localhost / 127.0.0.1 for local dev via http://localhost:3001
+//   • "null" origin — sent by browsers when a page is opened as file://
+//     (Chrome/Firefox send Origin: null for file:// → http:// requests)
+//
+// IMPORTANT: We do NOT throw errors for unknown origins — we silently deny.
+// Throwing causes a 500, which looks identical to "Failed to fetch" on mobile.
+const ALLOWED_ORIGINS = new Set([
   'https://appleprice.vercel.app',
   'https://applepricein.vercel.app',
   'https://www.appleprice.in',
   'https://appleprice.in',
-  // Allow any *.vercel.app preview deployment
-];
+]);
 
-app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (curl, Postman, same-origin server calls)
-    if (!origin) return callback(null, true);
-    // Allow any vercel.app subdomain (covers preview deployments)
-    if (origin.endsWith('.vercel.app') || ALLOWED_ORIGINS.includes(origin)) {
-      return callback(null, true);
-    }
-    // Allow localhost for local development
-    if (origin.startsWith('http://localhost') || origin.startsWith('http://127.0.0.1')) {
-      return callback(null, true);
-    }
-    return callback(new Error(`CORS: origin ${origin} not allowed`));
-  },
-  methods:     ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Accept', 'Authorization'],
-  credentials: false,
-}));
+function isAllowedOrigin(origin) {
+  if (!origin)            return true;  // no Origin header: curl, Postman, server calls
+  if (origin === 'null')  return true;  // file:// pages send the string "null"
+  if (ALLOWED_ORIGINS.has(origin)) return true;
+  if (origin.endsWith('.vercel.app')) return true;          // any Vercel preview URL
+  if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return true; // local dev
+  return false;
+}
 
-// Explicitly handle preflight OPTIONS for all routes
-app.options('*', cors());
+const corsOptions = {
+  origin:         (origin, cb) => cb(null, isAllowedOrigin(origin)),
+  methods:        ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Accept', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Content-Length'],
+  credentials:    false,
+  maxAge:         86400, // browsers cache preflight for 24 h → fewer OPTIONS round-trips
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
-app.use('/uploads', express.static(UPLOADS_DIR));   // serves both /uploads/products and /uploads/reviews
+app.use('/uploads', express.static(UPLOADS_DIR));
+
+// ── SERVE FRONTEND FROM BACKEND (local dev convenience) ───────────────────────
+// When running locally, open http://localhost:3001 to get the homepage,
+// and http://localhost:3001/admin.html for the admin panel.
+// This means the HTML is served from the same origin as the API — no CORS at all.
+// On production (Railway), this serves nothing harmful (frontend is on Vercel).
+const FRONTEND_DIR = path.join(__dirname, '..', 'frontend');
+if (fs.existsSync(FRONTEND_DIR)) {
+  app.use(express.static(FRONTEND_DIR));
+}
 
 // ── MULTER ────────────────────────────────────────────────────────────────────
 function makeUpload(subDir) {

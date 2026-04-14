@@ -282,29 +282,57 @@ footer{border-top:1px solid var(--border);padding:1.25rem 1.5rem;text-align:cent
 </footer>
 
 <script>
-// ── CONFIG ────────────────────────────────────────────────────────────────
-// Live backend on Railway. This is the only URL used — no localhost fallback.
-const API      = 'https://appleprice-production.up.railway.app/api';
-const API_BASE = 'https://appleprice-production.up.railway.app';
+// ── API CONFIG ────────────────────────────────────────────────────────────
+// Auto-detects the correct backend based on where the page is running.
+//
+// LOCAL via http://localhost:3001/  → same-origin, no CORS, works perfectly
+// LOCAL via file:// (double-click)  → uses http://localhost:3001 (CORS allows "null" origin)
+// LOCAL via http://localhost:PORT   → uses http://localhost:3001
+// LIVE on Vercel                    → uses Railway URL
+const LIVE_BACKEND  = 'https://appleprice-production.up.railway.app';
+const LOCAL_BACKEND = 'http://localhost:3001';
 
-// FIX: All image paths from the backend are relative (e.g. /uploads/foo.jpg).
-// imgUrl() converts them to absolute backend URLs.
-function imgUrl(path) {
-  if (!path) return '';
-  if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('//')) return path;
-  return API_BASE + path;
+const _host = window.location.hostname;
+const _proto = window.location.protocol;
+const _port  = window.location.port;
+
+const isLocal = (
+  _proto === 'file:' ||          // opened as file:// (double-click)
+  _host  === 'localhost' ||       // served via localhost
+  _host  === '127.0.0.1' ||       // served via 127.0.0.1
+  _host  === ''                   // blank host = file:// in some browsers
+);
+
+const API_BASE = isLocal ? LOCAL_BACKEND : LIVE_BACKEND;
+const API      = API_BASE + '/api';
+
+console.log('[ApplePrice] env:', isLocal ? 'LOCAL' : 'LIVE', '| backend:', API_BASE);
+
+// Resolve /uploads/ paths to absolute backend URLs.
+function imgUrl(p) {
+  if (!p) return '';
+  if (p.startsWith('http://') || p.startsWith('https://') || p.startsWith('//')) return p;
+  return API_BASE + p;
 }
 
 let allProducts = [];
 let activeCat   = 'All';
 
 // ── HARDENED FETCH WITH RETRY + TIMEOUT ──────────────────────────────────
-// Retries up to MAX_RETRIES times with exponential backoff.
-// Uses AbortController for per-request timeout so slow networks don't hang.
-// Cache-busting via no-store prevents Safari/Chrome returning stale data.
-const MAX_RETRIES    = 3;
-const BASE_DELAY_MS  = 800;   // first retry after 0.8 s
-const TIMEOUT_MS     = 12000; // 12 s per attempt
+// 3 retry attempts, exponential backoff, 15s AbortController timeout.
+//
+// Why no `cache: 'no-store'` fetch option:
+//   iOS Safari < 15.4 throws TypeError on cross-origin fetch with any cache
+//   directive. We bust caches via ?_=timestamp on the URL instead — that works
+//   on every browser including old iOS and Samsung Internet.
+//
+// Why Accept header is skipped for FormData:
+//   Adding custom headers to cross-origin FormData triggers a CORS preflight.
+//   On some mobile browsers that preflight fails if the backend is cold-starting,
+//   causing "Failed to fetch" before even trying the real request.
+const MAX_RETRIES   = 3;
+const BASE_DELAY_MS = 800;   // 0.8 s before retry 2, 1.6 s before retry 3
+const TIMEOUT_MS    = 15000; // 15 s per attempt — enough for Railway cold starts
 
 async function fetchWithRetry(url, opts = {}) {
   let lastErr;
@@ -315,50 +343,43 @@ async function fetchWithRetry(url, opts = {}) {
     const controller = new AbortController();
     const timer      = setTimeout(() => controller.abort(), TIMEOUT_MS);
     try {
+      const isFormData = opts.body instanceof FormData;
       const res = await fetch(url, {
         ...opts,
-        signal: controller.signal,
-        // Prevent stale cached responses on Safari and Chrome mobile
-        cache:  'no-store',
-        headers: {
-          'Accept': 'application/json',
-          ...(opts.headers || {}),
-        },
+        signal:  controller.signal,
+        headers: isFormData
+          ? (opts.headers || {})
+          : { 'Accept': 'application/json', ...(opts.headers || {}) },
       });
       clearTimeout(timer);
-      // Read as text first — never call .json() directly, avoids HTML parse crash
       const text = await res.text();
       let data;
       try { data = JSON.parse(text); }
-      catch(e) { throw new Error('Server returned non-JSON. Backend may be down.'); }
+      catch(e) { throw new Error('Server returned non-JSON. Is the backend running?'); }
       if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
       return data;
     } catch(e) {
       clearTimeout(timer);
-      lastErr = e;
-      // AbortError = timeout; don't retry on explicit abort
-      if (e.name === 'AbortError') {
-        lastErr = new Error(`Request timed out after ${TIMEOUT_MS / 1000}s`);
-      }
-      // Log attempt for debugging
-      console.warn(`[ApplePrice] Attempt ${attempt + 1}/${MAX_RETRIES} failed: ${lastErr.message}`);
+      lastErr = e.name === 'AbortError'
+        ? new Error(`Timed out after ${TIMEOUT_MS / 1000}s (attempt ${attempt + 1}/${MAX_RETRIES})`)
+        : e;
+      console.warn(`[ApplePrice] attempt ${attempt + 1}/${MAX_RETRIES}:`, lastErr.message);
     }
   }
   throw lastErr;
 }
 
+// GET: adds ?_=timestamp to bust any CDN or browser cache
 async function safeGet(path) {
-  // Append timestamp cache-buster to every GET — prevents Safari aggressive caching
   const sep = path.includes('?') ? '&' : '?';
-  const url = API + path + sep + '_=' + Date.now();
-  return fetchWithRetry(url);
+  return fetchWithRetry(API + path + sep + '_=' + Date.now());
 }
 
+// POST: handles both JSON and FormData
 async function safePost(path, body) {
   const opts = { method: 'POST' };
   if (body instanceof FormData) {
-    opts.body = body;
-    // Do NOT set Content-Type manually for FormData — browser sets it with boundary
+    opts.body = body; // browser sets Content-Type + boundary
   } else {
     opts.headers = { 'Content-Type': 'application/json' };
     opts.body    = JSON.stringify(body);
