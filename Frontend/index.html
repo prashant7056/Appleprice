@@ -283,36 +283,51 @@ footer{border-top:1px solid var(--border);padding:1.25rem 1.5rem;text-align:cent
 
 <script>
 // ── API CONFIG ────────────────────────────────────────────────────────────
-// Auto-detects the correct backend based on where the page is running.
+// LOCAL (file:// or localhost):  talks directly to http://localhost:3001
+// LIVE on Vercel:                uses RELATIVE paths ('' prefix)
+//   → /api/products hits appleprice.vercel.app/api/products
+//   → vercel.json rewrites that to Railway server-to-server
+//   → phone NEVER contacts Railway directly
 //
-// LOCAL via http://localhost:3001/  → same-origin, no CORS, works perfectly
-// LOCAL via file:// (double-click)  → uses http://localhost:3001 (CORS allows "null" origin)
-// LOCAL via http://localhost:PORT   → uses http://localhost:3001
-// LIVE on Vercel                    → uses Railway URL
-const LIVE_BACKEND  = 'https://appleprice-production.up.railway.app';
-const LOCAL_BACKEND = 'http://localhost:3001';
+// WHY THIS FIXES THE PHONE ISSUE:
+//   Indian carriers (Jio/Airtel/Vi) use transparent proxies that block or
+//   drop direct HTTPS connections to unknown foreign domains like Railway's
+//   US servers. By proxying everything through Vercel (which phones already
+//   trust), we eliminate carrier proxy interference entirely.
+//   Side effects: no CORS needed, no preflight, faster CDN routing.
 
-const _host = window.location.hostname;
+
+const _host  = window.location.hostname;
 const _proto = window.location.protocol;
-const _port  = window.location.port;
 
-const isLocal = (
-  _proto === 'file:' ||          // opened as file:// (double-click)
-  _host  === 'localhost' ||       // served via localhost
-  _host  === '127.0.0.1' ||       // served via 127.0.0.1
-  _host  === ''                   // blank host = file:// in some browsers
-);
 
-const API_BASE = isLocal ? LOCAL_BACKEND : LIVE_BACKEND;
-const API      = API_BASE + '/api';
+// Live:  API_BASE = '' → /api/... and /uploads/... are served by Vercel proxy
+// Local: API_BASE = 'http://localhost:3001' → direct to local backend
+const API = (
+  window.location.protocol === 'file:' ||
+  window.location.hostname === 'localhost' ||
+  window.location.hostname === '127.0.0.1'
+)
+  ? 'http://localhost:3001/api'
+  : '/api';
 
-console.log('[ApplePrice] env:', isLocal ? 'LOCAL' : 'LIVE', '| backend:', API_BASE);
 
-// Resolve /uploads/ paths to absolute backend URLs.
+// Image paths: /uploads/foo.jpg → API_BASE + /uploads/foo.jpg
+// Live:  '' + '/uploads/foo.jpg' = '/uploads/foo.jpg' → Vercel proxies to Railway
+// Local: 'http://localhost:3001' + '/uploads/foo.jpg' = direct
 function imgUrl(p) {
   if (!p) return '';
   if (p.startsWith('http://') || p.startsWith('https://') || p.startsWith('//')) return p;
-  return API_BASE + p;
+
+  const BASE = (
+    window.location.protocol === 'file:' ||
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1'
+  )
+    ? 'http://localhost:3001'
+    : '';
+
+  return BASE + p;
 }
 
 let allProducts = [];

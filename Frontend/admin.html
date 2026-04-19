@@ -287,30 +287,41 @@ input[type="file"].fi{padding:.35rem .6rem;cursor:pointer}
 <div class="toast" id="toast"></div>
 
 <script>
-const LIVE_BACKEND  = 'https://appleprice-production.up.railway.app';
-const LOCAL_BACKEND = 'http://localhost:3001';
+
 
 const _host  = window.location.hostname;
 const _proto = window.location.protocol;
 
-const isLocal = (
-  _proto === 'file:' ||
-  _host  === 'localhost' ||
-  _host  === '127.0.0.1' ||
-  _host  === ''
-);
 
-const API_BASE = isLocal ? LOCAL_BACKEND : LIVE_BACKEND;
-const API      = API_BASE + '/api';
+
+// Same proxy strategy as index.html — see index.html for full explanation.
+// Live: '' → /api/* and /uploads/* proxied through Vercel to Railway
+// Local: 'http://localhost:3001' → direct to backend
+
+const API = (
+  window.location.protocol === 'file:' ||
+  window.location.hostname === 'localhost' ||
+  window.location.hostname === '127.0.0.1'
+)
+  ? 'http://localhost:3001/api'
+  : '/api';
 const CREDS    = { user: 'Prashant7056', pass: 'Rohit@#12345' };
 
-console.log('[Admin] env:', isLocal ? 'LOCAL' : 'LIVE', '| backend:', API_BASE);
 
-// Resolve /uploads/ paths to absolute backend URLs
+// Image paths proxied through Vercel on live, direct on local
 function imgUrl(p) {
   if (!p) return '';
   if (p.startsWith('http://') || p.startsWith('https://') || p.startsWith('//')) return p;
-  return API_BASE + p;
+
+  const BASE = (
+    window.location.protocol === 'file:' ||
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1'
+  )
+    ? 'http://localhost:3001'
+    : '';
+
+  return BASE + p;
 }
 
 // ── HARDENED FETCH WITH RETRY + TIMEOUT ──────────────────────────────────
