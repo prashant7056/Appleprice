@@ -295,22 +295,26 @@ footer{border-top:1px solid var(--border);padding:1.25rem 1.5rem;text-align:cent
 //   US servers. By proxying everything through Vercel (which phones already
 //   trust), we eliminate carrier proxy interference entirely.
 //   Side effects: no CORS needed, no preflight, faster CDN routing.
-
+const LIVE_BACKEND  = 'https://appleprice-production.up.railway.app';
+const LOCAL_BACKEND = 'http://localhost:3001';
 
 const _host  = window.location.hostname;
 const _proto = window.location.protocol;
 
+const isLocal = (
+  _proto === 'file:' ||   // double-clicked as file://
+  _host  === 'localhost' ||
+  _host  === '127.0.0.1' ||
+  _host  === ''           // blank = file:// in some browsers
+);
 
 // Live:  API_BASE = '' → /api/... and /uploads/... are served by Vercel proxy
 // Local: API_BASE = 'http://localhost:3001' → direct to local backend
-const API = (
-  window.location.protocol === 'file:' ||
-  window.location.hostname === 'localhost' ||
-  window.location.hostname === '127.0.0.1'
-)
-  ? 'http://localhost:3001/api'
-  : '/api';
+const API_BASE = isLocal ? LOCAL_BACKEND : '';
+const API      = API_BASE + '/api';
 
+console.log('[ApplePrice] env:', isLocal ? 'LOCAL' : 'LIVE',
+            '| api:', API || '/api (via Vercel proxy → Railway)');
 
 // Image paths: /uploads/foo.jpg → API_BASE + /uploads/foo.jpg
 // Live:  '' + '/uploads/foo.jpg' = '/uploads/foo.jpg' → Vercel proxies to Railway
@@ -318,16 +322,7 @@ const API = (
 function imgUrl(p) {
   if (!p) return '';
   if (p.startsWith('http://') || p.startsWith('https://') || p.startsWith('//')) return p;
-
-  const BASE = (
-    window.location.protocol === 'file:' ||
-    window.location.hostname === 'localhost' ||
-    window.location.hostname === '127.0.0.1'
-  )
-    ? 'http://localhost:3001'
-    : '';
-
-  return BASE + p;
+  return API_BASE + p;
 }
 
 let allProducts = [];
